@@ -38,7 +38,7 @@ var SearchBox = {
     }
 
 };
-
+//changes
 var HomePage = {
     controller: function (args) {
         var cntrl = this;
