@@ -5,10 +5,10 @@ var StorageService = function (sid) {  /* Storage APi*/
             return JSON.parse(localStorage.getItem(STORAGE_ID) || '[]');
         },
         put: function (itm) {
-            localStorage.setItem(sid, JSON.stringify(STORAGE_ID));
+            localStorage.setItem(sid, JSON.stringify(itm));
         }
     }
-}.call();
+};
 
 
 var SearchListModel = function (data) {
@@ -16,47 +16,70 @@ var SearchListModel = function (data) {
     this.tag = m.prop(data.tag || "");
 };
 
-SearchListModel.list=function(){
-  var  dataService =StorageService('tags');
+SearchListModel.list = function () {
+    var dataService = StorageService('tags');
     return dataService.get();
-} ;
+};
 
-SearchListModel.save=function(item){
-  var  dataService =StorageService('tags');
+SearchListModel.save = function (item) {
+    var dataService = StorageService('tags');
     return dataService.put(item);
-} ;
+};
 
 
 var SearchBox = {
     controller: function () {
+
     },
-    view: function (cnt,args) {
+    view: function (ctrl, args) {
         return m('div', [
-            m('input[placeholder="Search Text"]'),
-            m("button",{onlick:args.onsave}, "Go")
+            m('input[placeholder="Search Text"]',
+                {oninput: m.withAttr("value", args.searchText), value: args.searchText()}),
+            m("button", {onclick: args.onSearchClick}, "Go")
         ])
     }
 
 };
-//changes
+//changes 5
 var HomePage = {
     controller: function (args) {
-        var cntrl = this;
-        cntrl.list = SearchListModel.list();
-        cntrl.save = function(list){
-            debugger;
-            alert('save clik');
-           // SearchListModel.save(list);
-        }  ;
+        var list = SearchListModel.list();
         return {
+            searchText: m.prop(''),
             onunload: function () {
                 console.log("unloading home component");
+            },
+            errorText: m.prop(''),
+            save: function () {
+                if (list.includes(this.searchText())) {
+                    this.errorText("Already Exists");
+                    return
+                }
+                this.errorText("");
+                list.push(this.searchText());
+                this.searchText('');
+                SearchListModel.save(list);
+            },
+            list: function () {
+                return list;
+            },
+            removeEl:function(){
+                alert('removing el');
             }
         };
     },
-    view: function (cntrl,args) {
+    view: function (cntrl, args) {
         return m("div", "Home", [
-            m(SearchBox, {onsave:cntrl.save}),
+            m(SearchBox, {onSearchClick: cntrl.save.bind(cntrl), searchText: cntrl.searchText}),
+            m('ul',
+                cntrl.list().map(function (searchText) {
+                    return m('li', [
+                        m('a[href="/list/' + searchText + '"]', {config: m.route}, searchText),
+                        m('span',{onclick:cntrl.removeEl},'x')
+                        ]);
+                })
+            ),
+            m("div", cntrl.errorText()),
             m('a[href="/list"]', {config: m.route}, 'List')
         ])
     }
@@ -65,11 +88,11 @@ var HomePage = {
 
 var ListPage = {
     controller: function () {
-
+        return {tag: m.route.param("tag")}
     },
-    view: function () {
+    view: function (cntrl) {
 
-        return m('div', "List", [
+        return m('div', "List :" + cntrl.tag, [
             m('a[href="/details"]', {config: m.route}, 'Details')
         ])
     }
@@ -86,7 +109,6 @@ var DetailsPage = {
         ])
     }
 };
-
 
 var dashboard = {
     controller: function () {
@@ -105,7 +127,7 @@ m.route.mode = "hash";
 //define a route
 m.route(document.body, "/home", {
     "/home": HomePage,
-    "/list": ListPage,
+    "/list/:tag": ListPage,
     "/details": DetailsPage,
     "/dashboard/:userID": dashboard
 });
