@@ -88,11 +88,30 @@ var HomePage = {
 
 var ListPage = {
     controller: function () {
-        return {tag: m.route.param("tag")}
+        var tag = m.route.param("tag") ;
+        var qlist =  m.request({method: "GET", url: "api/" + tag +".json"});
+        console.log(qlist);
+        return {tag: tag,
+                qList : m.request({method: "GET", url: "api/" + tag +".json"}),
+                click:function(url){
+                    window.open('http://stackoverflow.com/'+ url ,'_blank');
+                }
+            }
     },
     view: function (cntrl) {
 
-        return m('div', "List :" + cntrl.tag, [
+        return m('div', "Showing for :" + cntrl.tag, [
+            m('div', cntrl.qList().map(function(itm,i){
+              return  m('div',[
+                    m('span',(i+1) + '/' +itm.vote),
+                    m('br'),
+                    m('button',{onclick:cntrl.click(itm.link)},m('span',itm.question)) ,
+
+                    m('br'),
+                    m('span',itm.link),
+                    m('hr')
+                ]) ;
+            })),
             m('a[href="/details"]', {config: m.route}, 'Details')
         ])
     }
@@ -100,12 +119,14 @@ var ListPage = {
 
 var DetailsPage = {
     controller: function () {
-
+        var url = m.route.param("url") ;
+        return {url:url};
     },
-    view: function () {
+    view: function (cntrl) {
 
-        return m('div', "Details", [
-            m('a[href="/home"]', {config: m.route}, 'Home')
+        return m('div', "Details: " + cntrl.url  , [
+            m('a[href="/home"]', {config: m.route}, 'Home'),
+            m('iframe[src="http://stackoverflow.com/'+ cntrl.url +'"]')
         ])
     }
 };
@@ -128,7 +149,7 @@ m.route.mode = "hash";
 m.route(document.body, "/home", {
     "/home": HomePage,
     "/list/:tag": ListPage,
-    "/details": DetailsPage,
+    "/details/:url...": DetailsPage,
     "/dashboard/:userID": dashboard
 });
 
